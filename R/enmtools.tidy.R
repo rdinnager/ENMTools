@@ -38,6 +38,9 @@ enmtools.tidy <- function(species, env, f = NULL, model = "glm", test.prop = 0, 
 
   notes <- NULL
 
+  env <- check.raster(env, "env")
+  species <- check.species(species)
+
   mod <- choose_model(model, model_args)
 
   if(!case_weights_check(mod)) {
@@ -242,14 +245,14 @@ enmtools.tidy <- function(species, env, f = NULL, model = "glm", test.prop = 0, 
 
         rts.prep <- enmtools.prep(rep.species, env, nback = 0, weights = weights)
         rts.df <- rts.prep$data
-        rep.species <- rts.prep$species
+        rep.species2 <- rts.prep$species
 
         thisrep.tidy <- parsnip::fit(wf, data = rts.df)
 
-        thisrep.model.evaluation <-dismo::evaluate(as.numeric(unlist(predict(thisrep.tidy, new_data = rts.df[rts.df$presence == 1, ], type = "prob")$.pred_1)),
+        thisrep.model.evaluation <- dismo::evaluate(as.numeric(unlist(predict(thisrep.tidy, new_data = rts.df[rts.df$presence == 1, ], type = "prob")$.pred_1)),
                                                     as.numeric(unlist(predict(thisrep.tidy, new_data = rts.df[rts.df$presence == 0, ], type = "prob")$.pred_1)))
 
-        thisrep.env.model.evaluation <- env.evaluate(rep.species, thisrep.tidy, env, n.background = env.nback)
+        thisrep.env.model.evaluation <- env.evaluate(rep.species2, thisrep.tidy, env, n.background = env.nback)
 
         rts.geog.training[i] <- thisrep.model.evaluation@auc
         rts.env.training[i] <- thisrep.env.model.evaluation@auc
@@ -261,8 +264,8 @@ enmtools.tidy <- function(species, env, f = NULL, model = "glm", test.prop = 0, 
           rep.test.data2 <- temp.sp.prep$data
           temp.sp <- temp.sp.prep$species
 
-          thisrep.test.evaluation <-dismo::evaluate(as.numeric(unlist(predict(thisrep.tidy, new_data = rep.test.data2, type = "prob")$.pred_1)),
-                                                    as.numeric(unlist(predict(thisrep.tidy, new_data = rts.df[rts.df$presence == 0, ], type = "prob")$.pred_1)))
+          thisrep.test.evaluation <- dismo::evaluate(as.numeric(unlist(predict(thisrep.tidy, new_data = rep.test.data2[rep.test.data2$presence == 1, ], type = "prob")$.pred_1)),
+                                                     as.numeric(unlist(predict(thisrep.tidy, new_data = rep.test.data2[rep.test.data2$presence == 0, ], type = "prob")$.pred_1)))
 
           temp.sp <- rep.species
           temp.sp$presence.points <- terra::vect(rep.test.data, geom = c("x", "y"), crs = terra::crs(species$presence.points))
@@ -466,13 +469,16 @@ recipe.enmtools.species <- function (x, formula = NULL, env, nback = 1000, bg.so
 #'
 #' @examples
 #' enmtools.prep(iberolacerta.clade$species$monticola, euro.worldclim)
-enmtools.prep <- function(x, env = NA, nback = 1000, bg.source = "default", verbose = FALSE, bias = NA, weights = "none") {
+enmtools.prep <- function(x, env = NULL, nback = 1000, bg.source = "default", verbose = FALSE, bias = NA, weights = "none") {
+
   if(nback > 0) {
     species <- check.bg(x, env, nback = nback, bg.source = bg.source, verbose = verbose, bias = bias)
   } else {
     species <- x
   }
-  species <- add.env(species, env = env, verbose = verbose)
+  if(!is.null(env)) {
+    species <- add.env(species, env = env, verbose = verbose)
+  }
   x <- make_analysis.df(species)
   if(weights == "equal"){
     weights <- c(rep(1, nrow(species$presence.points)),

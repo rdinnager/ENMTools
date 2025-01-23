@@ -239,7 +239,7 @@ test_that("glm with polynomial terms works", {
 
 test_that("gam with smooth terms works", {
   aurelioi.gam.s <- enmtools.gam(iberolacerta.clade$species$aurelioi, euro.worldclim,
-   f = pres ~ s(bio1, bio12, 4))
+   f = pres ~ s(bio1, bio12, k = 4))
   expect_enmtools_model(aurelioi.gam.s)
 })
 
@@ -247,6 +247,7 @@ test_that("backwards compatability works", {
   cyreni <- iberolacerta.clade$species$cyreni
   loaded <- load("sysdata.rda")
   on.exit(rm(list = loaded), add = TRUE, after = FALSE)
+  #euro.worldclim.raster <- raster::raster(euro.worldclim)
   expect_warning(cyreni.glm.raster <- enmtools.glm(cyreni,
                                                    euro.worldclim,
                                                    f = pres ~ bio1 + bio9,
