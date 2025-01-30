@@ -35,7 +35,20 @@ enmtools.calibrate <- function(model, recalibrate = FALSE, cuts = 11, env = NA, 
   # The following bits of code basically just turn each model type's
   # output into probabilities.
 
-  if(inherits(model, "enmtools.glm") | inherits(model, "enmtools.gam")){
+  if(inherits(model, "enmtools.tidy")){
+
+    # For models that need to be transformed from logit to probabilities
+    p <- exp(model$test.evaluation@presence)/(1 + exp(model$test.evaluation@presence))
+    a <- exp(model$test.evaluation@absence)/(1 + exp(model$test.evaluation@absence))
+    train.p <- exp(model$training.evaluation@presence)/(1 + exp(model$training.evaluation@presence))
+
+    # Subsampling background test data to get same prevalence as we had with training data
+    a <- sample(a, size = model$test.prop * length(a), replace = FALSE)
+
+    # Pack it all up
+    pred.df <- data.frame(prob = c(p, a),
+                          obs = c(rep("presence", length(p)), rep("absence", length(a))))
+  } else if (inherits(model, "enmtools.glm") | inherits(model, "enmtools.gam")){
 
     # For models that need to be transformed from logit to probabilities
     p <- exp(model$test.evaluation@presence)/(1 + exp(model$test.evaluation@presence))
@@ -322,6 +335,7 @@ get_MCE_equal_width <- function(actual, predicted, bins=10){ #equal width bins
 }
 
 # Summary for objects of class enmtools.calibrate
+#' @exportS3Method
 summary.enmtools.calibrate <- function(object, ...){
 
   print(plot(object))
@@ -351,6 +365,7 @@ summary.enmtools.calibrate <- function(object, ...){
 }
 
 # Print method for objects of class enmtools.calibrate
+#' @exportS3Method
 print.enmtools.calibrate <- function(x, ...){
 
   print(summary(x, ...))
@@ -359,6 +374,7 @@ print.enmtools.calibrate <- function(x, ...){
 
 
 # Plot method for objects of class enmtools.calibrate
+#' @exportS3Method
 plot.enmtools.calibrate <- function(x, ...){
 
   if(inherits(x, "enmtools.recalibrated.model")){

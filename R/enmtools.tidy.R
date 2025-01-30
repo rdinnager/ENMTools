@@ -728,7 +728,7 @@ pres_only_sdm <- function(mode = "classification", engine = "bioclim") {
 NULL
 
 
-# Summary for objects of class enmtools.glm
+#' @exportS3Method
 summary.enmtools.tidy <- function(object, plot = TRUE, ...){
 
   cat("\n\nFormula or recipe:  ")
@@ -767,15 +767,16 @@ summary.enmtools.tidy <- function(object, plot = TRUE, ...){
 
 }
 
-# Print method for objects of class enmtools.glm
+
+#' @exportS3Method
 print.enmtools.tidy <- function(x, ...){
 
   print(summary(x, ...))
 
 }
 
+#' @exportS3Method
 plot.enmtools.tidy <- function(x, ...){
-
 
   suit.points <- data.frame(rasterToPoints2(x$suitability))
   colnames(suit.points) <- c("x", "y", "Suitability")
@@ -805,17 +806,17 @@ plot.enmtools.tidy <- function(x, ...){
 }
 
 
-# Predict method for models of class enmtools.glm
+# Predict method for models of class enmtools.tidy
 predict.enmtools.tidy <- function(object, env, maxpts = 1000, clamp = TRUE, ...){
 
   # Make a plot of habitat suitability in the new region
-  suitability <- terra::predict(env, object$model, type = "response", na.rm = TRUE)
+  suitability <- terra::predict(env, object$model, type = "prob", na.rm = TRUE)
 
   # Clamping and getting a diff layer
   clamping.strength <- NA
   if(clamp == TRUE){
     env <- clamp.env(object$analysis.df, env)
-    clamped.suitability <- terra::predict(env, object$model, type = "response", na.rm = TRUE)
+    clamped.suitability <- terra::predict(env, object$model, type = "prob", na.rm = TRUE)
     clamping.strength <- clamped.suitability - suitability
     suitability <- clamped.suitability
   }
